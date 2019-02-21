@@ -36,6 +36,7 @@ import tempfile
 import time
 import xml.etree.ElementTree
 import socket
+from keyring import get_password
 
 # this will move if running under Docker
 AWS_DIR = os.environ.get('AWS_DIR', path.expanduser('~/.aws'))
@@ -59,10 +60,13 @@ AssertionExpires = 0
 @arg('--password',     help='Password for user', default=None)
 @arg('--verbose',      help='Display trace output', default=False)
 @arg('--duration',     help='Duration of token validity, in hours', default=9)
+@arg('--keyring-account',  help='Keyring service account', default=None)
+@arg('--keyring-username', help='Keyring username, if not specified username parameter is used', default=None)
 def authenticate(url=os.environ.get('ADFS_URL',''), region=os.environ.get('AWS_DEFAULT_REGION','us-east-1'),
                  batch=False, all_accounts=False, account=None,
                  profile='%a:%r', domain=os.environ.get('ADFS_DOMAIN',''), role=None, username=os.environ.get('USER',''),
-                 password=None, filename=CREDS_FILE, auto_update=False, verbose=False, duration=9):
+                 password=None, filename=CREDS_FILE, auto_update=False, verbose=False, duration=9,
+                 keyring_account=None, keyring_username=None):
     "Authenticate via SAML and write out temporary security tokens to the credentials file"
 
     if verbose:
@@ -88,6 +92,12 @@ def authenticate(url=os.environ.get('ADFS_URL',''), region=os.environ.get('AWS_D
             die('Unable to determine ADFS username. Specify via --username option or run interactively.')
 
     domain_username = format_domain_username(domain, username)
+
+    # attempt to get password from the system keyring service
+    if not keyring_username:
+        keyring_username = username
+    if keyring_account and keyring_username:
+        password = get_password(keyring_account, keyring_username)
 
     if not password:
         if not batch:

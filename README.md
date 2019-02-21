@@ -251,3 +251,9 @@ optional arguments:
   --filename FILENAME  Name of AWS credentials file (default:
                        '/Users/mjreed/.aws/credentials')
 ```
+
+## OSX launchd documentation (TODO)
+
+### Requirements
+
+### Installation
