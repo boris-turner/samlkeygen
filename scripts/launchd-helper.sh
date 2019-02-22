@@ -2,19 +2,20 @@
 
 SAMLKEYGEN_NAME="samlkeygen"
 SAMLKEYGEN_PATH="${HOME}/samlkeygen-env/bin/${SAMLKEYGEN_NAME}"
-SAMLKEYGEN_LOG_DIR="samlkeygen-log"
+SAMLKEYGEN_DIR="${HOME}/${SAMLKEYGEN_NAME}"
+SAMLKEYGEN_LOGS_DIR="${SAMLKEYGEN_DIR}/logs"
 SAMLKEYGEN_PLIST="${SAMLKEYGEN_NAME}.plist"
 SAMLKEYGEN_ACCOUNT_NAME="${SAMLKEYGEN_NAME}"
 
 function usage() {
     echo "Usage: $0 [options...]" >&2
-    echo "       -s  check status" >&2
-    echo "       -l  load launchd plist file" >&2
-    echo "       -u  unload launchd plist file" >&2
-    echo "       -i  install launchd plist file" >&2
-    echo "       -r  uninstall launchd plist file" >&2
-    echo "       -a  specify keyring account service name" >&2
-    echo "       -p  samlkeygen path, defaults to ${SAMLKEYGEN_PATH}" >&2
+    echo "  -s  check status of the samlkeygen process" >&2
+    echo "  -l  load samlkeygen launchd plist file" >&2
+    echo "  -u  unload samlkeygen launchd plist file" >&2
+    echo "  -i  install samlkeygen launchd plist file" >&2
+    echo "  -r  uninstall samlkeygen launchd plist file" >&2
+    echo "  -a  specify keyring account service name" >&2
+    echo "  -p  samlkeygen path, defaults to ${SAMLKEYGEN_PATH}" >&2
     echo >&2
     exit 2
 }
@@ -83,7 +84,7 @@ SAMLKEYGEN_PLIST_XML=$(cat <<EOS
     <true/>
 
     <key>Label</key>
-    <string>${SAMLKEYGEN_NAME}</string>
+    <string>com.turner.${SAMLKEYGEN_NAME}</string>
 
     <key>ProcessType</key>
     <string>Interactive</string>
@@ -110,10 +111,10 @@ SAMLKEYGEN_PLIST_XML=$(cat <<EOS
     <string>${HOME}</string>
 
     <key>StandardOutPath</key>
-    <string>${HOME}/${SAMLKEYGEN_LOG_DIR}/${SAMLKEYGEN_NAME}.log</string>
+    <string>${SAMLKEYGEN_LOGS_DIR}/${SAMLKEYGEN_NAME}.log</string>
 
     <key>StandardErrorPath</key>
-    <string>${HOME}/${SAMLKEYGEN_LOG_DIR}/${SAMLKEYGEN_NAME}.log</string>
+    <string>${SAMLKEYGEN_LOGS_DIR}/${SAMLKEYGEN_NAME}.log</string>
   </dict>
 </plist>
 EOS
@@ -121,7 +122,7 @@ EOS
 
 function status() {
     if [[ -d "${HOME}/Library/LaunchAgents" && -e "${HOME}/Library/LaunchAgents/${SAMLKEYGEN_PLIST}" ]]; then
-        launchctl list ${SAMLKEYGEN_NAME}
+        launchctl list "com.turner.${SAMLKEYGEN_NAME}"
     else
         echo "Unable to check launchd ${SAMLKEYGEN_NAME} process status"
         exit 1
@@ -132,7 +133,7 @@ function load() {
     if [[ -d "${HOME}/Library/LaunchAgents" && -e "${HOME}/Library/LaunchAgents/${SAMLKEYGEN_PLIST}" ]]; then
         launchctl load -w ${HOME}/Library/LaunchAgents/${SAMLKEYGEN_PLIST}
         echo
-        echo "stderr and stdout are located in the ${HOME}/${SAMLKEYGEN_LOG_DIR} directory"
+        echo "stderr and stdout are located in the ${SAMLKEYGEN_LOGS_DIR} directory"
         echo
     else
         echo "Unable to load launchd ${SAMLKEYGEN_NAME} process"
@@ -142,7 +143,7 @@ function load() {
 
 function unload() {
     if [[ -d "${HOME}/Library/LaunchAgents" && -e "${HOME}/Library/LaunchAgents/${SAMLKEYGEN_PLIST}" ]]; then
-        if launchctl list ${SAMLKEYGEN_NAME}; then
+        if launchctl list "com.turner.${SAMLKEYGEN_NAME}"; then
             launchctl unload -w ${HOME}/Library/LaunchAgents/${SAMLKEYGEN_PLIST}
         fi
     else
@@ -153,15 +154,15 @@ function unload() {
 
 function install_plist() {
     mkdir -p "${HOME}/Library/LaunchAgents"
-    mkdir -p ${HOME}/${SAMLKEYGEN_LOG_DIR}
-    echo "${SAMLKEYGEN_PLIST_XML}" > ${HOME}/${SAMLKEYGEN_PLIST}
-    ln -f -s ${HOME}/${SAMLKEYGEN_PLIST} ${HOME}/Library/LaunchAgents/${SAMLKEYGEN_PLIST}
+    mkdir -p ${SAMLKEYGEN_DIR}
+    mkdir -p ${SAMLKEYGEN_LOGS_DIR}
+    echo "${SAMLKEYGEN_PLIST_XML}" > "${SAMLKEYGEN_DIR}/${SAMLKEYGEN_PLIST}"
+    ln -f -s "${SAMLKEYGEN_DIR}/${SAMLKEYGEN_PLIST}" ${HOME}/Library/LaunchAgents/${SAMLKEYGEN_PLIST}
 }
 
 function uninstall_plist() {
     rm -f ${HOME}/Library/LaunchAgents/${SAMLKEYGEN_PLIST}
-    rm -f ${HOME}/${SAMLKEYGEN_PLIST}
-    rm -fr ${HOME}/${SAMLKEYGEN_LOG_DIR}
+    rm -fr "${SAMLKEYGEN_DIR}"
 }
 
 if ${run_install_plist}; then

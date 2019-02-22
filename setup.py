@@ -26,5 +26,6 @@ setup(
       'awsprofs = samlkeygen:awsprofs',
       'awsrun = samlkeygen:awsrun'
     ]
-  }
+  },
+  scripts=['scripts/launchd-helper.sh']
 )
