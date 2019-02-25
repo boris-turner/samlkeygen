@@ -27,5 +27,5 @@ setup(
       'awsrun = samlkeygen:awsrun'
     ]
   },
-  scripts=['scripts/launchd-helper.sh']
+  scripts=['scripts/samlkeygen-launchd-helper.sh']
 )

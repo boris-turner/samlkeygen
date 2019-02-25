@@ -4,7 +4,8 @@ SAMLKEYGEN_NAME="samlkeygen"
 SAMLKEYGEN_PATH="${HOME}/samlkeygen-env/bin/${SAMLKEYGEN_NAME}"
 SAMLKEYGEN_DIR="${HOME}/${SAMLKEYGEN_NAME}"
 SAMLKEYGEN_LOGS_DIR="${SAMLKEYGEN_DIR}/logs"
-SAMLKEYGEN_PLIST="${SAMLKEYGEN_NAME}.plist"
+SAMLKEYGEN_PLIST_LABEL="com.turner.${SAMLKEYGEN_NAME}"
+SAMLKEYGEN_PLIST="${SAMLKEYGEN_PLIST_LABEL}.plist"
 SAMLKEYGEN_ACCOUNT_NAME="${SAMLKEYGEN_NAME}"
 
 function usage() {
@@ -15,7 +16,7 @@ function usage() {
     echo "  -i  install samlkeygen launchd plist file" >&2
     echo "  -r  uninstall samlkeygen launchd plist file" >&2
     echo "  -a  specify keyring account service name" >&2
-    echo "  -p  samlkeygen path, defaults to ${SAMLKEYGEN_PATH}" >&2
+    echo "  -p  samlkeygen exec path, defaults to ${SAMLKEYGEN_PATH}" >&2
     echo >&2
     exit 2
 }
@@ -84,7 +85,7 @@ SAMLKEYGEN_PLIST_XML=$(cat <<EOS
     <true/>
 
     <key>Label</key>
-    <string>com.turner.${SAMLKEYGEN_NAME}</string>
+    <string>${SAMLKEYGEN_PLIST_LABEL}</string>
 
     <key>ProcessType</key>
     <string>Interactive</string>
