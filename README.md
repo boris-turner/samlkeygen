@@ -252,8 +252,38 @@ optional arguments:
                        '/Users/mjreed/.aws/credentials')
 ```
 
-## OSX launchd documentation (TODO)
+## OSX launchd documentation (Work in Progress)
 
 ### Requirements
 
+1. Python
+1. samlkeygen
+
 ### Installation
+
+1. Create `samlkeygen` python virtual env in your $HOME directory and activate your new env:
+
+```
+python3 -mvenv ${HOME}/samlkeygen-env && source ${HOME}/samlkeygen-env/bin/activate
+```
+
+1. Install `samlkeygen` directly from PyPI using the `pip install samlkeygen` command, or clone the samlkeygen git repository and run the following command:
+
+```
+cd /pathn/to/cloned/samlkeygen
+pip install -e .
+```
+
+1. Add AD password entry into the OSX keychain. This can be done via the OSX Keychain Access GUI app or command line utility:
+
+```
+security add-generic-password -a ${USER} -s samlkeygen -w
+```
+
+1. Install launchd samlkeygen agent using the `samlkeygen-launchd-helper.sh` script provided with installation.
+
+```
+samlkeygen-launchd-helper.sh -i
+```
+
+1. Load the agent with the `samlkeygen-launchd-helper.sh -i` command.
