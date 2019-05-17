@@ -98,8 +98,6 @@ SAMLKEYGEN_PLIST_XML=$(cat <<EOS
       <string>authenticate</string>
       <string>--all-accounts</string>
       <string>--auto-update</string>
-      <string>--keyring-account</string>
-      <string>${SAMLKEYGEN_ACCOUNT_NAME}</string>
     </array>
 
     <key>RunAtLoad</key>
@@ -120,6 +118,9 @@ SAMLKEYGEN_PLIST_XML=$(cat <<EOS
 </plist>
 EOS
 )
+
+# <string>--keyring-account</string>
+# <string>${SAMLKEYGEN_ACCOUNT_NAME}</string>
 
 function status() {
     if [[ -d "${HOME}/Library/LaunchAgents" && -e "${HOME}/Library/LaunchAgents/${SAMLKEYGEN_PLIST}" ]]; then

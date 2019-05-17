@@ -201,26 +201,27 @@ usage: samlkeygen authenticate [-h] [--url URL] [--region REGION] [--batch]
 Authenticate via SAML and write out temporary security tokens to the credentials file
 
 optional arguments:
-  -h, --help           show this help message and exit
-  --url URL            URL to ADFS provider (default: '')
-  --region REGION      AWS region to use (default: 'us-east-1')
-  --batch              Disable all interactive prompts (default: False)
-  --all-accounts       Retrieve tokens for all accounts and roles (default:
-                       False)
-  --account ACCOUNT    Name or ID of AWS account for which to generate token
-                       (default: -)
-  --profile PROFILE    Name to give profile in credentials file (default
-                       account:role) (default: -)
-  --domain DOMAIN      Windows domain to authenticate to (default: '')
-  --role ROLE          Name or ARN of role for which to generate token
-                       (default: all for account) (default: -)
-  --username USERNAME  Name of user to authenticate as (default: 'mjreed')
-  --password PASSWORD  Password for user (default: -)
-  --filename FILENAME  Name of AWS credentials file (default:
-                       '/Users/mjreed/.aws/credentials')
-  --auto-update        Continue running and update token(s) every hour
-                       (default: False)
-  --verbose            Display trace output (default: False)
+  -h, --help               show this help message and exit
+  --url URL                URL to ADFS provider (default: '')
+  --region REGION          AWS region to use (default: 'us-east-1')
+  --batch                  Disable all interactive prompts (default: False)
+  --all-accounts           Retrieve tokens for all accounts and roles (default:
+                           False)
+  --account ACCOUNT        Name or ID of AWS account for which to generate token
+                           (default: -)
+  --profile PROFILE        Name to give profile in credentials file (default
+                           account:role) (default: -)
+  --domain DOMAIN          Windows domain to authenticate to (default: '')
+  --role ROLE              Name or ARN of role for which to generate token
+                           (default: all for account) (default: -)
+  --username USERNAME      Name of user to authenticate as (default: 'mjreed')
+  --password PASSWORD      Password for user (default: -)
+  --filename FILENAME      Name of AWS credentials file (default:
+                           '/Users/mjreed/.aws/credentials')
+  --credentials-file FILE  Credentials file (defaults to ~/.samlkeygen-credentials)
+  --auto-update            Continue running and update token(s) every hour
+                           (default: False)
+  --verbose                Display trace output (default: False)
 ```
 
 ```
@@ -274,11 +275,14 @@ cd /pathn/to/cloned/samlkeygen
 pip install -e .
 ```
 
-1. Add AD password entry into the OSX keychain. This can be done via the OSX Keychain Access GUI app or command line utility:
+1. Option 1: Add AD password entry into the OSX Keychain. This can be done via the OSX Keychain Access GUI app or command line utility:
 
 ```
 security add-generic-password -a ${USER} -s samlkeygen -w
 ```
+
+1. Option 2: Create the `~/.samlkeygen-credentials` file and add `domain:username:password` token into the file. Make sure that the file is only readable by your user. `chmod 600  ~/.samlkeygen-credentials`.
+
 
 1. Install launchd samlkeygen agent using the `samlkeygen-launchd-helper.sh` script provided with installation.
 
@@ -286,4 +290,4 @@ security add-generic-password -a ${USER} -s samlkeygen -w
 samlkeygen-launchd-helper.sh -i
 ```
 
-1. Load the agent with the `samlkeygen-launchd-helper.sh -i` command.
+1. Load the agent with the `samlkeygen-launchd-helper.sh -l` command.

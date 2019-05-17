@@ -39,6 +39,8 @@ import socket
 from keyring import get_password
 
 # this will move if running under Docker
+DEFAULT_CREDS_FILE = path.expanduser('~/.samlkeygen-credentials')
+CredsToken = namedtuple('CredsToken', ['domain', 'username', 'password'])
 AWS_DIR = os.environ.get('AWS_DIR', path.expanduser('~/.aws'))
 CREDS_FILE = path.join(AWS_DIR, 'credentials')
 TEMP_FILE = CREDS_FILE + '.tmp'
@@ -62,11 +64,12 @@ AssertionExpires = 0
 @arg('--duration',     help='Duration of token validity, in hours', default=9)
 @arg('--keyring-account',  help='Keyring service account', default=None)
 @arg('--keyring-username', help='Keyring username, if not specified username parameter is used', default=None)
+@arg('--credentials-file', help='Credentials file with credentials token formated like user:domain:password', default=DEFAULT_CREDS_FILE)
 def authenticate(url=os.environ.get('ADFS_URL',''), region=os.environ.get('AWS_DEFAULT_REGION','us-east-1'),
                  batch=False, all_accounts=False, account=None,
                  profile='%a:%r', domain=os.environ.get('ADFS_DOMAIN',''), role=None, username=os.environ.get('USER',''),
                  password=None, filename=CREDS_FILE, auto_update=False, verbose=False, duration=9,
-                 keyring_account=None, keyring_username=None):
+                 keyring_account=None, keyring_username=None, credentials_file=DEFAULT_CREDS_FILE):
     "Authenticate via SAML and write out temporary security tokens to the credentials file"
 
     if verbose:
@@ -80,16 +83,21 @@ def authenticate(url=os.environ.get('ADFS_URL',''), region=os.environ.get('AWS_D
 
     # check to see if url hostname resolves to 10 netwrok and assume VPN connection is up
     if not url:
-            die('Pass ADFS URL via --url or set ADFS_URL in environment.')
+        die('Pass ADFS URL via --url or set ADFS_URL in environment.')
+
+    # Get credentials from file
+    token = parse_credentials_file(credentials_file)
+    if token:
+        domain, username, password = token.domain, token.username, token.password
 
     if not domain:
-        die('Pass ADFS authentication domain via --domain or set ADFS_DOMAIN in environment.')
+        die('Pass ADFS authentication domain via --domain, credentials file, or set ADFS_DOMAIN in environment.')
 
     if not username:
         if not batch:
             username = input('Username:')
         if not username:
-            die('Unable to determine ADFS username. Specify via --username option or run interactively.')
+            die('Unable to determine ADFS username. Specify via --username option, credentials file, or run interactively.')
 
     domain_username = format_domain_username(domain, username)
 
@@ -103,7 +111,8 @@ def authenticate(url=os.environ.get('ADFS_URL',''), region=os.environ.get('AWS_D
         if not batch:
             password = getpass.getpass("{}'s password: ".format(domain_username))
     if not password:
-        die('No password given for {}. Respond to prompt or specify via --password option.'.format(username))
+        die('No password given for {}. Respond to prompt, add password into credentials file, '
+            'or specify via --password option.'.format(username))
 
     saml_creds, saml_response = authorize(url, domain, username, password, batch)
 
@@ -196,6 +205,24 @@ def authenticate(url=os.environ.get('ADFS_URL',''), region=os.environ.get('AWS_D
                 print('{} minutes till credential refresh\r'.format(counter), end='')
                 sys.stdout.flush()
                 time.sleep(60)
+
+def parse_credentials_file(credentials_file):
+    try:
+        stat = os.stat(credentials_file)
+    except FileNotFoundError:
+        return None
+    if not os.access(credentials_file, os.R_OK):
+        return None
+    # File should be user readable only
+    if not oct(stat.st_mode).endswith('00'):
+        return None
+    with open(credentials_file, 'r') as f:
+        tokens = f.readline()
+    domain, _, rest = tokens.rstrip().partition(':')
+    username, _, password = rest.partition(':')
+    return CredsToken(domain=domain,
+                      username=username,
+                      password=password)
 
 def merge_ini_files(source_files, target_file):
     target = configparser.RawConfigParser()
