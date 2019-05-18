@@ -36,7 +36,11 @@ import tempfile
 import time
 import xml.etree.ElementTree
 import socket
-from keyring import get_password
+try:
+    from keyring import get_password
+except ModuleNotFoundError:
+    def get_password(*args, **kwargs):
+        return None
 
 # this will move if running under Docker
 DEFAULT_CREDS_FILE = path.expanduser('~/.samlkeygen-credentials')
