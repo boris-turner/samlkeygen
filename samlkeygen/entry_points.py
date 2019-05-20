@@ -92,6 +92,7 @@ def authenticate(url=os.environ.get('ADFS_URL',''), region=os.environ.get('AWS_D
     token = parse_credentials_file(credentials_file)
     if token:
         domain, username, password = token.domain, token.username, token.password
+        warn("Token found for user {} on domain {}".format(username, domain), info=True)
 
     if not domain:
         die('Pass ADFS authentication domain via --domain, credentials file, or set ADFS_DOMAIN in environment.')
@@ -176,11 +177,14 @@ def authenticate(url=os.environ.get('ADFS_URL',''), region=os.environ.get('AWS_D
         files = []
         started = time.time()
         for account_arn, role_arn in roles:
-            trace('account_arn={}, role_arn={}'.format(account_arn, role_arn));
-            (fd, temp_file) = tempfile.mkstemp(text=True)
+            trace('account_arn={}, role_arn={}'.format(account_arn, role_arn))
+            fd, temp_file = tempfile.mkstemp(text=True)
             os.close(fd)
             files.append(temp_file)
-            p = Process(target=authenticate_account_role, args=(temp_file, profile, account_arn, role_arn, saml_creds, saml_response, region, validity))
+            p = Process(
+                target=authenticate_account_role,
+                args=(temp_file, profile, account_arn, role_arn, saml_creds, saml_response, region, validity)
+            )
             p.start()
             processes.append(p)
 
@@ -205,9 +209,7 @@ def authenticate(url=os.environ.get('ADFS_URL',''), region=os.environ.get('AWS_D
             next_update = time.time() + validity - 60
             while time.time() < next_update:
                 counter = int((next_update - time.time()) // 60)
-                sys.stdout.write('{} minutes till credential refresh'.format(counter))
-                sys.stdout.write(os.linesep)
-                sys.stdout.flush()
+                warn('{} minutes till credential refresh'.format(counter), info=True)
                 time.sleep(60 * 5)
 
 def parse_credentials_file(credentials_file):
@@ -216,9 +218,11 @@ def parse_credentials_file(credentials_file):
     except FileNotFoundError:
         return None
     if not os.access(credentials_file, os.R_OK):
+        warn("Unable to read file {}".format(credentials_file))
         return None
     # File should be user readable only
     if not oct(stat.st_mode).endswith('00'):
+        warn("Invalid access flags for file {} - {}".format(credentials_file, oct(stat.st_mode)))
         return None
     with open(credentials_file, 'r') as f:
         tokens = f.readline()
@@ -320,9 +324,7 @@ def authenticate_account_role(filename, profile_format, principal_arn, role_arn,
     account_name = get_account_name(principal_arn, saml_response, role_arn, region)
     role_name = get_role_name(role_arn)
     profile = profile_format.replace('%a', account_name).replace('%r', role_name)
-    sys.stdout.write('Writing credentials for profile {}'.format(profile))
-    sys.stdout.write(os.linesep)
-    sys.stdout.flush()
+    warn('Writing credentials for profile {}'.format(profile), info=True)
     write_creds_file(filename, profile, token)
 
 @arg('--filename',  help='Name of AWS credentials file', default=CREDS_FILE)
@@ -330,9 +332,7 @@ def authenticate_account_role(filename, profile_format, principal_arn, role_arn,
 def list_profiles(pattern, filename=CREDS_FILE):
     "List available AWS profiles in the credentials file"
     for (profile, conf) in sorted(load_profiles(filename, pattern)):
-        sys.stdout.write(profile)
-        sys.stdout.write(os.linesep)
-    sys.stdout.flush()
+        warn(profile, info=True)
 
 def get_profile(filename, pattern, multi=False):
     profiles = load_profiles(filename, pattern)
@@ -358,18 +358,26 @@ def load_credentials(filename, force_refresh=False):
 load_credentials.config = None
 load_credentials.filename = None
 
-def warn(message):
-    if not '\n' in message:
-        message = message + '\n'
-    sys.stderr.write('{}: {}'.format('samlkeygen', message))
+def warn(*messages, info=False):
+    for message in messages:
+        if info:
+            sys.stdout.write('{}: {}'.format('samlkeygen', message))
+            sys.stdout.write(os.linesep)
+        else:
+            sys.stderr.write('{}: {}'.format('samlkeygen', message))
+            sys.stderr.write(os.linesep)
+    if info:
+        sys.stdout.flush()
+    else:
+        sys.stderr.flush()
 
-def die(message):
-    warn(message)
+def die(*messages):
+    warn(*messages)
     sys.exit(1)
 
-def trace(message):
+def trace(*messages):
     if tracing():
-        warn(message)
+        warn(*messages)
 
 def trace_on():
     os.environ['SAMLAUTH_DEBUG'] = 'true'
@@ -447,7 +455,7 @@ def web_authenticate(url, domain, username, password, batch=False, sslverificati
 
         saml_response = extract_saml_assertion(url,response)
     else:
-        die( "Response from {}: {}".format( urlparse(url).hostname, response.reason ) )
+        die("Response from {}: {}".format(urlparse(url).hostname, response.reason))
 
     return (url, domain, username, password), saml_response
 
@@ -529,10 +537,8 @@ def select_profile(pattern, filename=CREDS_FILE):
     if len(profiles) == 0:
         die('No matching profiles found.')
     if len(profiles) > 1:
-        die('Pattern is not unique. It matches these profiles: \n\t' + '\n\t'.join(profiles) + '\n')
-    sys.stdout.write(profiles[0])
-    sys.stdout.write(os.linesep)
-    sys.stdout.flush()
+        die('Pattern is not unique. It matches these profiles:', ','.join(profiles), '')
+    warn(profiles[0], info=True)
 
 @arg('--all-profiles', help='Run command once each for all profiles in credentials file', default=False)
 @arg('--multiple',     help='If pattern matches multiple profiles, run command in all of them', default=False)
@@ -556,7 +562,7 @@ def run_command(pattern, *command, **kwargs):
     if len(profiles) == 0:
         die('No matching profiles found.')
     if len(profiles) > 1 and not all_profiles and not multiple:
-        die('Pattern is not unique. It matches these profiles: \n\t' + '\n\t'.join(profiles) + '\n')
+        die('Pattern is not unique. It matches these profiles:', ','.join(profiles), '')
     env = os.environ.copy()
     for profile in profiles:
        env['AWS_PROFILE'] = profile
@@ -564,9 +570,7 @@ def run_command(pattern, *command, **kwargs):
        subprocess.call(command, env=env)
 
 def version():
-    sys.stdout.write(__version__)
-    sys.stdout.write(os.linesep)
-    sys.stdout.flush()
+    warn(__version__, info=True)
 
 def main():
     parser = argh.ArghParser()
