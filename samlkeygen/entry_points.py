@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
 
 from ._version import __version__, __version_info__
 
@@ -206,7 +205,8 @@ def authenticate(url=os.environ.get('ADFS_URL',''), region=os.environ.get('AWS_D
             next_update = time.time() + validity - 60
             while time.time() < next_update:
                 counter = int((next_update - time.time()) // 60)
-                print('{} minutes till credential refresh\r'.format(counter), end='')
+                sys.stdout.write('{} minutes till credential refresh'.format(counter))
+                sys.stdout.write(os.linesep)
                 sys.stdout.flush()
                 time.sleep(60)
 
@@ -320,7 +320,9 @@ def authenticate_account_role(filename, profile_format, principal_arn, role_arn,
     account_name = get_account_name(principal_arn, saml_response, role_arn, region)
     role_name = get_role_name(role_arn)
     profile = profile_format.replace('%a', account_name).replace('%r', role_name)
-    print('Writing credentials for profile {}'.format(profile))
+    sys.stdout.write('{} minutes till credential refresh'.format(counter))
+    sys.stdout.write(os.linesep)
+    sys.stdout.flush()
     write_creds_file(filename, profile, token)
 
 @arg('--filename',  help='Name of AWS credentials file', default=CREDS_FILE)
@@ -328,7 +330,9 @@ def authenticate_account_role(filename, profile_format, principal_arn, role_arn,
 def list_profiles(pattern, filename=CREDS_FILE):
     "List available AWS profiles in the credentials file"
     for (profile, conf) in sorted(load_profiles(filename, pattern)):
-        print(profile)
+        sys.stdout.write(profile)
+        sys.stdout.write(os.linesep)
+    sys.stdout.flush()
 
 def get_profile(filename, pattern, multi=False):
     profiles = load_profiles(filename, pattern)
@@ -526,7 +530,9 @@ def select_profile(pattern, filename=CREDS_FILE):
         die('No matching profiles found.')
     if len(profiles) > 1:
         die('Pattern is not unique. It matches these profiles: \n\t' + '\n\t'.join(profiles) + '\n')
-    print(profiles[0])
+    sys.stdout.write(profiles[0])
+    sys.stdout.write(os.linesep)
+    sys.stdout.flush()
 
 @arg('--all-profiles', help='Run command once each for all profiles in credentials file', default=False)
 @arg('--multiple',     help='If pattern matches multiple profiles, run command in all of them', default=False)
@@ -558,7 +564,9 @@ def run_command(pattern, *command, **kwargs):
        subprocess.call(command, env=env)
 
 def version():
-    print(__version__)
+    sys.stdout.write(__version__)
+    sys.stdout.write(os.linesep)
+    sys.stdout.flush()
 
 def main():
     parser = argh.ArghParser()
