@@ -208,7 +208,7 @@ def authenticate(url=os.environ.get('ADFS_URL',''), region=os.environ.get('AWS_D
                 sys.stdout.write('{} minutes till credential refresh'.format(counter))
                 sys.stdout.write(os.linesep)
                 sys.stdout.flush()
-                time.sleep(60)
+                time.sleep(60 * 5)
 
 def parse_credentials_file(credentials_file):
     try:
@@ -320,7 +320,7 @@ def authenticate_account_role(filename, profile_format, principal_arn, role_arn,
     account_name = get_account_name(principal_arn, saml_response, role_arn, region)
     role_name = get_role_name(role_arn)
     profile = profile_format.replace('%a', account_name).replace('%r', role_name)
-    sys.stdout.write('{} minutes till credential refresh'.format(counter))
+    sys.stdout.write('Writing credentials for profile {}'.format(profile))
     sys.stdout.write(os.linesep)
     sys.stdout.flush()
     write_creds_file(filename, profile, token)
